@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grønn Kant & Klipp</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-dark: #1a3a1f;
+  --green-mid: #2d5a35;
+  --green-bright: #4a8c55;
+  --green-light: #7ec486;
+  --green-pale: #d4edda;
+  --cream: #f5f0e8;
+  --text: #1a2e1c;
+  --white: #fff;
+  --edit-color: #2563eb;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); overflow-x: hidden; }
+
+/* ── EDIT TOOLBAR ── */
+#edit-toolbar {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: #111;
+  border-radius: 40px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  user-select: none;
+  white-space: nowrap;
+}
+
+#edit-toolbar .tb-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding-right: 6px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  margin-right: 2px;
+}
+
+.tb-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.tb-btn.active {
+  background: var(--edit-color);
+  color: #fff;
+}
+
+.tb-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.12);
+}
+
+.tb-btn.save-btn { background: #16a34a; color: #fff; }
+.tb-btn.save-btn:hover { background: #15803d; }
+
+/* ── EDIT MODE styles ── */
+body.editing [contenteditable="true"] {
+  outline: 2px dashed rgba(37,99,235,0.5);
+  outline-offset: 2px;
+  border-radius: 2px;
+  cursor: text;
+  transition: outline 0.15s;
+}
+
+body.editing [contenteditable="true"]:hover {
+  outline: 2px solid rgba(37,99,235,0.75);
+  background: rgba(37,99,235,0.04);
+}
+
+body.editing [contenteditable="true"]:focus {
+  outline: 2px solid var(--edit-color);
+  background: rgba(37,99,235,0.06);
+}
+
+.edit-hint {
+  display: none;
+  position: fixed;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--edit-color);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 8px 18px;
+  border-radius: 20px;
+  z-index: 9998;
+  pointer-events: none;
+  animation: fadeDown 0.3s ease;
+}
+
+body.editing .edit-hint { display: block; }
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2.5rem;
+  background: rgba(26,58,31,0.97);
+  backdrop-filter: blur(8px);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--green-light);
+  letter-spacing: 0.02em;
+}
+.logo span { color: var(--white); }
+
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav a {
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+nav a:hover { color: var(--green-light); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(to bottom right, rgba(26,58,31,0.82), rgba(45,90,53,0.6)),
+    url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80') center/cover no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 100px;
+  background: linear-gradient(to top, var(--cream), transparent);
+}
+
+.hero-content {
+  max-width: 700px;
+  padding: 0 2.5rem;
+  margin-top: 80px;
+  animation: fadeUp 1s ease both;
+}
+
+.hero-tag {
+  display: inline-block;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.9rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--white);
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 em { font-style: normal; color: var(--green-light); }
+
+.hero p {
+  font-size: 1.15rem;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.7;
+  max-width: 520px;
+  margin-bottom: 2.5rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--green-bright);
+  color: var(--white);
+  padding: 1rem 2.2rem;
+  border-radius: 3px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-primary:hover { background: var(--green-mid); transform: translateY(-2px); }
+
+.btn-outline {
+  display: inline-block;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  color: var(--white);
+  padding: 1rem 2.2rem;
+  border-radius: 3px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-left: 1rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+
+/* ── SECTIONS ── */
+section { padding: 7rem 2.5rem; }
+.section-label {
+  font-size: 0.75rem; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--green-bright); margin-bottom: 0.75rem;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700; color: var(--green-dark);
+  line-height: 1.15; margin-bottom: 1.25rem;
+}
+.section-subtitle {
+  font-size: 1.05rem; color: #4a5e4e;
+  line-height: 1.75; max-width: 540px;
+}
+
+/* ── SERVICES ── */
+#tjenester { background: var(--white); }
+.services-layout {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 5rem; align-items: start;
+}
+.service-cards { display: flex; flex-direction: column; gap: 1.2rem; }
+.service-card {
+  display: flex; gap: 1.25rem; padding: 1.5rem;
+  border: 1px solid #dde8de; border-radius: 6px;
+  background: var(--cream);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.service-card:hover {
+  border-color: var(--green-bright);
+  box-shadow: 0 4px 20px rgba(74,140,85,0.12);
+  transform: translateX(4px);
+}
+.service-icon {
+  flex-shrink: 0; width: 52px; height: 52px;
+  background: var(--green-pale); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+}
+.service-card h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--green-dark); margin-bottom: 0.35rem;
+}
+.service-card p { font-size: 0.9rem; color: #5a6e5c; line-height: 1.6; }
+
+/* ── HOW IT WORKS ── */
+#hvordan { background: var(--green-dark); }
+#hvordan .section-label { color: var(--green-light); }
+#hvordan .section-title { color: var(--white); }
+.steps-grid {
+  max-width: 1100px; margin: 3rem auto 0;
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem;
+}
+.step {
+  padding: 2rem 1.5rem;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  transition: background 0.2s;
+}
+.step:hover { background: rgba(255,255,255,0.08); }
+.step-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.5rem; font-weight: 900;
+  color: rgba(126,196,134,0.18); line-height: 1; margin-bottom: 1rem;
+}
+.step h3 { font-size: 1rem; font-weight: 500; color: var(--white); margin-bottom: 0.5rem; }
+.step p { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.65; }
+
+/* ── PRICING ── */
+#priser { background: var(--cream); }
+.pricing-grid {
+  max-width: 1000px; margin: 3.5rem auto 0;
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem;
+}
+.price-card {
+  background: var(--white); border: 1px solid #dde8de;
+  border-radius: 8px; padding: 2.5rem 2rem; position: relative;
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+.price-card:hover { box-shadow: 0 8px 32px rgba(26,58,31,0.12); transform: translateY(-4px); }
+.price-card.featured { background: var(--green-dark); border-color: var(--green-dark); }
+.price-card.featured .price-name,
+.price-card.featured .price-desc,
+.price-card.featured .price-feature { color: rgba(255,255,255,0.8); }
+.price-card.featured .price-amount { color: var(--green-light); }
+.featured-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--green-bright); color: var(--white);
+  font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.3rem 0.85rem;
+  border-radius: 20px; white-space: nowrap;
+}
+.price-name { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #6a8a6e; margin-bottom: 1rem; }
+.price-amount { font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 900; color: var(--green-dark); line-height: 1; margin-bottom: 0.25rem; }
+.price-amount span { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 400; color: #8a9e8c; }
+.price-desc { font-size: 0.88rem; color: #6a8a6e; margin-bottom: 1.75rem; line-height: 1.5; }
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+.price-feature { font-size: 0.88rem; color: #4a5e4e; display: flex; align-items: center; gap: 0.6rem; }
+.price-feature::before { content: '✓'; color: var(--green-bright); font-weight: 700; flex-shrink: 0; }
+.price-card.featured .price-feature::before { color: var(--green-light); }
+
+/* ── CONTACT ── */
+#kontakt { background: var(--white); }
+.contact-layout {
+  max-width: 900px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1.2fr;
+  gap: 5rem; align-items: start;
+}
+.contact-detail { display: flex; gap: 1rem; align-items: flex-start; margin-top: 2rem; }
+.contact-detail-icon {
+  width: 40px; height: 40px; background: var(--green-pale);
+  border-radius: 4px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+}
+.contact-detail-text h4 { font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: #8a9e8c; margin-bottom: 0.2rem; }
+.contact-detail-text p { font-size: 0.95rem; color: var(--text); }
+.contact-form { display: flex; flex-direction: column; gap: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-group label { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #6a8a6e; }
+.form-group input, .form-group textarea, .form-group select {
+  padding: 0.85rem 1rem; border: 1.5px solid #dde8de; border-radius: 4px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+  color: var(--text); background: var(--cream);
+  transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(74,140,85,0.12);
+}
+.form-group textarea { resize: vertical; min-height: 120px; }
+.btn-submit {
+  background: var(--green-dark); color: var(--white); border: none;
+  padding: 1rem 2rem; font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 500; border-radius: 4px;
+  cursor: pointer; transition: background 0.2s, transform 0.15s;
+}
+.btn-submit:hover { background: var(--green-mid); transform: translateY(-1px); }
+#form-result { font-size: 0.9rem; color: var(--green-bright); padding: 0.6rem 0; min-height: 1.4rem; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--green-dark); padding: 2.5rem;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+footer p { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+
+.reveal { opacity:0; transform:translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* ── SAVED TOAST ── */
+#toast {
+  position: fixed; top: 80px; right: 28px;
+  background: #16a34a; color: #fff;
+  padding: 12px 22px; border-radius: 8px;
+  font-size: 0.88rem; font-weight: 500;
+  z-index: 9999; opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  nav ul { display: none; }
+  .services-layout, .contact-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+  section { padding: 5rem 1.5rem; }
+  #edit-toolbar { bottom: 16px; padding: 8px 14px; gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<!-- EDIT HINT -->
+<div class="edit-hint">✏️ Klikk på hvilken som helst tekst for å redigere den</div>
+
+<!-- SAVED TOAST -->
+<div id="toast">✓ Siden er lagret!</div>
+
+<!-- EDIT TOOLBAR -->
+<div id="edit-toolbar">
+  <span class="tb-label">Rediger</span>
+  <button class="tb-btn" id="toggle-btn" onclick="toggleEdit()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Rediger side
+  </button>
+  <div class="tb-divider"></div>
+  <button class="tb-btn save-btn" onclick="savePage()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Lagre
+  </button>
+  <button class="tb-btn" onclick="loadPage()" style="color:rgba(255,255,255,0.5)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+    Gjenopprett
+  </button>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Grønn <span>Kant & Klipp</span></div>
+  <ul>
+    <li><a href="#tjenester">Tjenester</a></li>
+    <li><a href="#hvordan">Slik gjør vi det</a></li>
+    <li><a href="#priser">Priser</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag" data-editable>Profesjonell hagestell</div>
+    <h1 data-editable>Din hage —<br><em>alltid prikkfri.</em></h1>
+    <p data-editable>Vi klipper gress og kanter med presisjon og omtanke. Overlat jobben til oss, og nyt en velstelt hage hele sesongen.</p>
+    <a href="#kontakt" class="btn-primary" data-editable>Få gratis befaring</a>
+    <a href="#tjenester" class="btn-outline" data-editable>Se tjenester</a>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="tjenester">
+  <div class="services-layout">
+    <div class="services-intro reveal">
+      <p class="section-label" data-editable>Hva vi tilbyr</p>
+      <h2 class="section-title" data-editable>Grønt og velstelt — fra kant til kant</h2>
+      <p class="section-subtitle" data-editable>Vi spesialiserer oss på presist arbeid ute i hagen. Enten det er jevn gressklipping eller skarpe kanter langs bed og innkjørsler — vi gjør det skikkelig.</p>
+    </div>
+    <div class="service-cards reveal">
+      <div class="service-card">
+        <div class="service-icon" data-editable>🌿</div>
+        <div>
+          <h3 data-editable>Gressklipping</h3>
+          <p data-editable>Jevn og profesjonell klipping til riktig høyde. Vi tilpasser oss din plen og klipper med effektivt utstyr.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" data-editable>✂️</div>
+        <div>
+          <h3 data-editable>Kantklipping</h3>
+          <p data-editable>Skarpe, rene kanter langs bed, gangstier, innkjørsler og hekker. Gir hagen et ferdig og profesjonelt uttrykk.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" data-editable>🍃</div>
+        <div>
+          <h3 data-editable>Hageavfall og rydding</h3>
+          <p data-editable>Vi raker bort og fraktar grass og avfall. Hagen er pyntet og ryddig når vi er ferdige.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" data-editable>📅</div>
+        <div>
+          <h3 data-editable>Fast avtale</h3>
+          <p data-editable>Sett opp ukentlig eller annenhver uke — vi kommer fast og du trenger ikke tenke på det.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="hvordan">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p class="section-label" data-editable>Prosessen</p>
+    <h2 class="section-title" style="color:white" data-editable>Enkelt fra start til slutt</h2>
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-number">01</div>
+        <h3 data-editable>Ta kontakt</h3>
+        <p data-editable>Send oss en melding eller ring. Vi svarer raskt og setter opp et tidspunkt for befaring.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-number">02</div>
+        <h3 data-editable>Gratis befaring</h3>
+        <p data-editable>Vi kommer innom, ser på hagen din og gir deg et uforpliktende tilbud samme dag.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-number">03</div>
+        <h3 data-editable>Vi klipper</h3>
+        <p data-editable>Vi møter opp til avtalt tid med profesjonelt utstyr og gjør jobben grundig.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-number">04</div>
+        <h3 data-editable>Nyt hagen</h3>
+        <p data-editable>Du sitter igjen med en velstelt, prikkfri hage. Enkelt og greit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="priser">
+  <div style="max-width:1100px;margin:0 auto;text-align:center;">
+    <p class="section-label" data-editable>Priser</p>
+    <h2 class="section-title" style="margin:0 auto 0.75rem" data-editable>Rettferdige priser, ingen overraskelser</h2>
+    <p class="section-subtitle" style="margin:0 auto;text-align:center" data-editable>Alle priser er inkl. utstyr og bortkjøring av avfall. Nøyaktig pris avklares på befaring.</p>
+    <div class="pricing-grid">
+      <div class="price-card reveal">
+        <div class="price-name" data-editable>Gressklipping</div>
+        <div class="price-amount" data-editable>200<span> kr</span></div>
+        <div class="price-desc" data-editable>Fra — pris etter areal</div>
+        <ul class="price-features">
+          <li class="price-feature" data-editable>Jevn klipping</li>
+          <li class="price-feature" data-editable>Tilpasset høyde</li>
+          <li class="price-feature" data-editable>Oppsamling av gress</li>
+        </ul>
+      </div>
+      <div class="price-card featured reveal">
+        <div class="featured-badge" data-editable>Mest populær</div>
+        <div class="price-name" data-editable>Klipp + Kant</div>
+        <div class="price-amount" data-editable>250<span> kr</span></div>
+        <div class="price-desc" data-editable>Fra — best verdi for pengene</div>
+        <ul class="price-features">
+          <li class="price-feature" data-editable>Gressklipping inkludert</li>
+          <li class="price-feature" data-editable>Kantklipping inkludert</li>
+          <li class="price-feature" data-editable>Oppsamling og rydding</li>
+          <li class="price-feature" data-editable>Skarpe, rene kanter</li>
+        </ul>
+      </div>
+      <div class="price-card reveal">
+        <div class="price-name" data-editable>Kantklipping</div>
+        <div class="price-amount" data-editable>100<span> kr</span></div>
+        <div class="price-desc" data-editable>Fra — kun kantklipping</div>
+        <ul class="price-features">
+          <li class="price-feature" data-editable>Kanter langs bed</li>
+          <li class="price-feature" data-editable>Kanter langs gangsti</li>
+          <li class="price-feature" data-editable>Ryddig resultat</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="kontakt">
+  <div class="contact-layout">
+    <div class="reveal">
+      <p class="section-label" data-editable>Kontakt oss</p>
+      <h2 class="section-title" data-editable>La oss ta oss av hagen din</h2>
+      <p class="section-subtitle" data-editable>Send oss en melding, så tar vi kontakt for å avtale gratis befaring. Ingen forpliktelser.</p>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">📍</div>
+        <div class="contact-detail-text">
+          <h4>Område</h4>
+          <p data-editable>Lyngdal og omegn</p>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">📞</div>
+        <div class="contact-detail-text">
+          <h4>Telefon</h4>
+          <p data-editable>+47 900 00 000</p>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">🕐</div>
+        <div class="contact-detail-text">
+          <h4>Åpningstider</h4>
+          <p data-editable>Man–fre: 07–18 · Lør: 08–14</p>
+        </div>
+      </div>
+    </div>
+    <div class="contact-form reveal">
+      <div class="form-group">
+        <label>Navn</label>
+        <input type="text" id="c-name" placeholder="Ditt navn">
+      </div>
+      <div class="form-group">
+        <label>Telefon</label>
+        <input type="tel" id="c-phone" placeholder="+47 000 00 000">
+      </div>
+      <div class="form-group">
+        <label>Tjeneste</label>
+        <select id="c-service">
+          <option value="">Velg tjeneste...</option>
+          <option>Gressklipping</option>
+          <option>Kantklipping</option>
+          <option>Klipp + Kant (pakke)</option>
+          <option>Fast avtale</option>
+          <option>Annet</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Melding</label>
+        <textarea id="c-msg" placeholder="Beskriv hagen din eller still et spørsmål..."></textarea>
+      </div>
+      <button class="btn-submit" onclick="sendForm()">Send forespørsel</button>
+      <div id="form-result"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo">Grønn <span>Kant & Klipp</span></div>
+  <p data-editable>© 2026 Grønn Kant & Klipp · Lyngdal</p>
+</footer>
+
+<script>
+// ── REVEAL ON SCROLL ──
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+reveals.forEach(el => observer.observe(el));
+
+// ── EDIT MODE ──
+let editMode = false;
+const editables = document.querySelectorAll('[data-editable]');
+const toggleBtn = document.getElementById('toggle-btn');
+
+function toggleEdit() {
+  editMode = !editMode;
+  document.body.classList.toggle('editing', editMode);
+  editables.forEach(el => {
+    el.contentEditable = editMode ? 'true' : 'false';
+  });
+  toggleBtn.classList.toggle('active', editMode);
+  toggleBtn.innerHTML = editMode
+    ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Ferdig redigering`
+    : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rediger side`;
+}
+
+// ── SAVE / LOAD ──
+function savePage() {
+  const data = {};
+  editables.forEach((el, i) => {
+    data['el_' + i] = el.innerHTML;
+  });
+  localStorage.setItem('gkk_content', JSON.stringify(data));
+  showToast('✓ Siden er lagret!');
+}
+
+function loadPage() {
+  const stored = localStorage.getItem('gkk_content');
+  if (!stored) { showToast('Ingen lagret versjon funnet', true); return; }
+  const data = JSON.parse(stored);
+  editables.forEach((el, i) => {
+    if (data['el_' + i] !== undefined) el.innerHTML = data['el_' + i];
+  });
+  showToast('✓ Siden er gjenopprettet!');
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#dc2626' : '#16a34a';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Auto-load on start
+window.addEventListener('DOMContentLoaded', () => {
+  const stored = localStorage.getItem('gkk_content');
+  if (stored) {
+    const data = JSON.parse(stored);
+    editables.forEach((el, i) => {
+      if (data['el_' + i] !== undefined) el.innerHTML = data['el_' + i];
+    });
+  }
+});
+
+// ── CONTACT FORM ──
+function sendForm() {
+  const name = document.getElementById('c-name').value.trim();
+  const phone = document.getElementById('c-phone').value.trim();
+  const result = document.getElementById('form-result');
+  if (!name || !phone) {
+    result.style.color = '#c0392b';
+    result.textContent = 'Fyll inn navn og telefon.';
+    return;
+  }
+  result.style.color = 'var(--green-bright)';
+  result.textContent = `Takk, ${name}! Vi ringer deg tilbake snart. 🌿`;
+  document.getElementById('c-name').value = '';
+  document.getElementById('c-phone').value = '';
+  document.getElementById('c-service').value = '';
+  document.getElementById('c-msg').value = '';
+}
+</script>
+</body>
+</html>
